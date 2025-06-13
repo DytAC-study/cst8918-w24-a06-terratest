@@ -36,26 +36,17 @@ func TestAzureLinuxVMCreation(t *testing.T) {
 
 	// Test NIC connection
 	t.Run("Verify NIC Connection", func(t *testing.T) {
-		// Get the VM details
 		vm := azure.GetVirtualMachine(t, vmName, resourceGroupName, subscriptionID)
-
-		// Verify that the VM has at least one network interface
 		assert.NotEmpty(t, *vm.NetworkProfile.NetworkInterfaces, "VM should have at least one network interface")
-
-		// Get the first NIC ID and name
 		nicID := *(*vm.NetworkProfile.NetworkInterfaces)[0].ID
 		nicName := azure.GetNameFromResourceID(nicID)
-
-		// Verify that the NIC exists
 		assert.True(t, azure.NetworkInterfaceExists(t, nicName, resourceGroupName, subscriptionID), "Network interface should exist")
 	})
 
 	// Test Ubuntu version
 	t.Run("Verify Ubuntu Version", func(t *testing.T) {
-		// Get the VM details
 		vm := azure.GetVirtualMachine(t, vmName, resourceGroupName, subscriptionID)
 
-		// Verify the image reference
 		assert.Equal(t, "Canonical", *vm.StorageProfile.ImageReference.Publisher, "Image publisher should be Canonical")
 		assert.Equal(t, "0001-com-ubuntu-server-jammy", *vm.StorageProfile.ImageReference.Offer, "Image offer should be Ubuntu Server 22.04 LTS")
 		assert.Equal(t, "22_04-lts-gen2", *vm.StorageProfile.ImageReference.Sku, "Image SKU should be 22.04 LTS Gen2")
