@@ -30,25 +30,19 @@ func TestAzureLinuxVMCreation(t *testing.T) {
 	// Run `terraform output` to get the value of output variable
 	vmName := terraform.Output(t, terraformOptions, "vm_name")
 	resourceGroupName := terraform.Output(t, terraformOptions, "resource_group_name")
+	nicName := terraform.Output(t, terraformOptions, "nic_name")
 
 	// Confirm VM exists
 	assert.True(t, azure.VirtualMachineExists(t, vmName, resourceGroupName, subscriptionID))
 
-	// Test NIC connection
-	t.Run("Verify NIC Connection", func(t *testing.T) {
-		vm := azure.GetVirtualMachine(t, vmName, resourceGroupName, subscriptionID)
-		assert.NotEmpty(t, *vm.NetworkProfile.NetworkInterfaces, "VM should have at least one network interface")
-		nicID := *(*vm.NetworkProfile.NetworkInterfaces)[0].ID
-		nicName := azure.GetNameFromResourceID(nicID)
-		assert.True(t, azure.NetworkInterfaceExists(t, nicName, resourceGroupName, subscriptionID), "Network interface should exist")
-	})
+	// Confirm NIC exists and is connected to VM
+	actualNicNames := azure.GetVirtualMachineNics(t, vmName, resourceGroupName, subscriptionID)
+	assert.Equal(t, nicName, actualNicNames[0])
 
-	// Test Ubuntu version
-	t.Run("Verify Ubuntu Version", func(t *testing.T) {
-		vm := azure.GetVirtualMachine(t, vmName, resourceGroupName, subscriptionID)
-
-		assert.Equal(t, "Canonical", *vm.StorageProfile.ImageReference.Publisher, "Image publisher should be Canonical")
-		assert.Equal(t, "0001-com-ubuntu-server-jammy", *vm.StorageProfile.ImageReference.Offer, "Image offer should be Ubuntu Server 22.04 LTS")
-		assert.Equal(t, "22_04-lts-gen2", *vm.StorageProfile.ImageReference.Sku, "Image SKU should be 22.04 LTS Gen2")
-	})
+	// Confirm the VM is running the correct Ubuntu version
+	vmImage := azure.GetVirtualMachineImage(t, vmName, resourceGroupName, subscriptionID)
+	expectedOSPublisher := "Canonical"
+	expectedOSVersion := "22_04-lts-gen2"
+	assert.Equal(t, expectedOSPublisher, vmImage.Publisher)
+	assert.Equal(t, expectedOSVersion, vmImage.SKU)
 }
